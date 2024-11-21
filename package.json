@@ -20,5 +20,8 @@
 	"keywords": [
 		"node",
 		"express"
-	]
+	],
+	"devDependencies": {
+		"nodemon": "^3.1.7"
+	}
 }
