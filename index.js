@@ -57,22 +57,23 @@ app.get('/api/users', async (req, res) => {
 });
 
 app.post('/api/users/:_id/exercises', async (req, res) => {
-  await Exercise.create({
-    user: req.params._id,
-    description: req.body.description,
-    duration: Number(req.body.duration),
-    date: new Date(req.body.date)
-  });
-  const [exercises, user] = await Promise.all([Exercise.find({user: req.params._id}).select('description duration date').exec(), User.findById(req.params._id).select('_id username').exec()]);
-  res.send({
+  const [exercise, user] = await Promise.all([
+    Exercise.create({
+      user: req.params._id,
+      description: req.body.description,
+      duration: Number(req.body.duration),
+      date: req.body.date ? new Date(`${req.body.date}:00:00:00:000`) : new Date()
+    }), 
+    User.findById(req.params._id)
+  ]);
+  const result =   {
     username: user.username,
-    count: exercises.length,
-    logs: exercises.map(exercise => ({
-      description: exercise.description,
-      duration: exercise.duration,
-      date: exercise.date?.toDateString()
-    }))
-  })
+    description: exercise.description,
+    duration: exercise.duration,
+    date: exercise.date?.toDateString(),
+    _id: user._id,
+  }
+  res.send(result);
 });
 
 const buildQueryParams = (req) => {
@@ -101,16 +102,27 @@ const buildQueryParams = (req) => {
 
 app.get('/api/users/:_id/logs', async (req, res) => {
   const queryParams = buildQueryParams(req);
-  const exercises = await Exercise.find(queryParams).limit(req.query.limit ? Number(req.query.limit) : undefined).exec();
-  res.send(exercises.map(exercise => ({
-    description: exercise.description,
-    duration: exercise.duration,
-    date: exercise.date?.toDateString()
-  }))); 
+  const [exercises, user] = await Promise.all([
+    Exercise.find(queryParams).limit(req.query.limit ? Number(req.query.limit) : undefined).exec(),
+    User.findById(req.params._id),
+  ]);
+  const result = {
+    username: user.username,
+    _id: user._id,
+    count: exercises.length,
+    log: exercises.map(exercise => ({
+      description: exercise.description,
+      duration: exercise.duration,
+      date: exercise.date?.toDateString()
+    }))
+  }
+  res.send(result); 
 });
 
 
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
+  User.deleteMany();
+  Exercise.deleteMany();
 })
