@@ -70,7 +70,7 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
     logs: exercises.map(exercise => ({
       description: exercise.description,
       duration: exercise.duration,
-      date: exercise.date
+      date: exercise.date?.toDateString()
     }))
   })
 });
@@ -102,7 +102,11 @@ const buildQueryParams = (req) => {
 app.get('/api/users/:_id/logs', async (req, res) => {
   const queryParams = buildQueryParams(req);
   const exercises = await Exercise.find(queryParams).limit(req.query.limit ? Number(req.query.limit) : undefined).exec();
-  res.send(exercises); 
+  res.send(exercises.map(exercise => ({
+    description: exercise.description,
+    duration: exercise.duration,
+    date: exercise.date?.toDateString()
+  }))); 
 });
 
 
